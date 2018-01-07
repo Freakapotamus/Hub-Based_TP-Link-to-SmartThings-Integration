@@ -2,7 +2,7 @@
 Description=node.js server to manage TP-Link Smart Bulbs
 
 [Service]
-ExecStart=/home/smartbulbs/TP-LinkServer_v3_fixed.js
+ExecStart=/home/smartbulbs/TP-LinkServer_v3.js
 Restart=always
 User=smartbulbs
 Group=smartbulbs
