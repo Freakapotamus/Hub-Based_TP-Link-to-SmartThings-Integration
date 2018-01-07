@@ -1,0 +1,14 @@
+[Unit]
+Description=node.js server to manage TP-Link Smart Bulbs
+
+[Service]
+ExecStart=/home/smartbulbs/TP-LinkServer_v3_fixed.js
+Restart=always
+User=smartbulbs
+Group=smartbulbs
+Environment=PATH=/usr/bin:/usr/local/bin:/usr/sbin
+Environment=NODE_ENV=production
+WorkingDirectory=/home/smartbulbs/
+
+[Install]
+WantedBy=multi-user.target
