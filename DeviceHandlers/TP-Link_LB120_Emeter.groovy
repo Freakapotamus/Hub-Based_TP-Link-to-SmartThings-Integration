@@ -20,7 +20,7 @@ Update History
 
 metadata {
 	definition (
-		name: "TP-Link LB120 Emeter", namespace: "modify", author: "Dave Gutheinz") {
+		name: "TP-Link LB120 Emeter Hub", namespace: "modify", author: "Dave Gutheinz") {
 		capability "switch"
 		capability "Switch Level"
 		capability "Color Temperature"
