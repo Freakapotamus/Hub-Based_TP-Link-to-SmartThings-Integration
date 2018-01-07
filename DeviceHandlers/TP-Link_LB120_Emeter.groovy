@@ -20,7 +20,7 @@ Update History
 
 metadata {
 	definition (
-		name: "TP-Link LB120 Emeter", namespace: "djg", author: "Dave Gutheinz") {
+		name: "TP-Link LB120 Emeter", namespace: "modify", author: "Dave Gutheinz") {
 		capability "switch"
 		capability "Switch Level"
 		capability "Color Temperature"
@@ -87,12 +87,18 @@ metadata {
 		main("switch")
 		details(["switch", "colorTempSliderControl", "colorTemp", "power", "weekTotal", "monthTotal", "engrToday", "weekAverage", "monthAverage", "bulbMode", "refresh" ,"refreshStats"])
 	}
-}
-
-preferences {
+	def rates = [:]
+    rates << ["5" : "Refresh every 5 minutes"]
+    rates << ["10" : "Refresh every 10 minutes"]	
+    rates << ["15" : "Refresh every 15 minutes"]
+    rates << ["30" : "Refresh every 30 minutes"]
+	preferences {
 	input("deviceIP", "text", title: "Device IP", required: true, displayDuringSetup: true)
 	input("gatewayIP", "text", title: "Gateway IP", required: true, displayDuringSetup: true)
+        input name: "refreshRate", type: "enum", title: "Refresh Rate", options: rates, description: "Select Refresh Rate", required: false
+    }
 }
+
 
 def installed() {
 	updated()
@@ -100,9 +106,25 @@ def installed() {
 
 def updated() {
 	unschedule()
-	runEvery15Minutes(refresh)
-	schedule("0 30 0 * * ?", setCurrentDate)
+	switch(refreshRate) {
+		case "5":
+			runEvery5Minutes(refresh)
+            log.info "Refresh Scheduled for every 5 minutes"
+			break
+		case "10":
+			runEvery10Minutes(refresh)
+            log.info "Refresh Scheduled for every 10 minutes"
+			break
+		case "15":
+			runEvery15Minutes(refresh)
+            log.info "Refresh Scheduled for every 15 minutes"
+			break
+		default:
+			runEvery30Minutes(refresh)
+            log.info "Refresh Scheduled for every 30 minutes"
+	}
 	runIn(2, refresh)
+    schedule("0 30 0 * * ?", setCurrentDate)
 	runIn(6, setCurrentDate)
 }
 
