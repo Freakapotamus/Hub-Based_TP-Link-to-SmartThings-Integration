@@ -182,22 +182,22 @@ def refreshResponse(response){
 }
 
 //	----- Parse State from Bulb Responses ------------------------
-def parseStatus(state){
-	def status = state.on_off
-	if (status == 1) {
-		status = "on"
+def parseStatus(status){
+	def onOff = status.on_off
+	if (onOff == 1) {
+		onOff = "on"
 	} else {
-		status = "off"
-		state = state.dft_on_state
+		onOff = "off"
+		status = status.dft_on_state
 	}
-	def mode = state.mode
-	def level = state.brightness
-	def color_temp = state.color_temp
-	log.info "$device.name $device.label: Power: ${status} / Mode: ${mode} / Brightness: ${level}% / Color Temp: ${color_temp}K"
-	sendEvent(name: "switch", value: status, isStateChange: true)
-	sendEvent(name: "bulbMode", value: mode, isStateChange: true)
-	sendEvent(name: "level", value: level, isStateChange: true)
-	sendEvent(name: "colorTemperature", value: color_temp, isStateChange: true)
+	def level = status.brightness
+	def mode = status.mode
+	def color_temp = status.color_temp
+	log.info "$device.name $device.label: Power: ${onOff} / Brightness: ${level}% / Mode: ${mode} / Color Temp: ${color_temp}K"
+	sendEvent(name: "switch", value: onOff)
+	sendEvent(name: "level", value: level)
+	sendEvent(name: "bulbMode", value: mode)
+	sendEvent(name: "colorTemperature", value: color_temp)
 	getEngeryMeter()
 }
 
@@ -315,17 +315,17 @@ def engrStatsResponse(response) {
 			log.info "$device.name $device.label: Updated 7 and 30 day energy consumption statistics"
 			def monAvgEnergy = Math.round(monTotEnergy/(monTotDays-1))/1000
 			def wkAvgEnergy = Math.round(wkTotEnergy/7)/1000
-			sendEvent(name: "monthTotalE", value: monTotEnergy/1000, isStateChange: true)
-			sendEvent(name: "monthAvgE", value: monAvgEnergy, isStateChange: true)
-			sendEvent(name: "weekTotalE", value: wkTotEnergy/1000, isStateChange: true)
-			sendEvent(name: "weekAvgE", value: wkAvgEnergy, isStateChange: true)
+			sendEvent(name: "monthTotalE", value: monTotEnergy/1000)
+			sendEvent(name: "monthAvgE", value: monAvgEnergy)
+			sendEvent(name: "weekTotalE", value: wkTotEnergy/1000)
+			sendEvent(name: "weekAvgE", value: wkAvgEnergy)
 		}
 	}
 }
 
 //	----- Update date data ---------------------------------------
 def setCurrentDate() {
-	sendCmdtoServer('{"smartlife.iot.common.timesetting":{"get_time":null}}', "deviceCommand", "currentDateResponse")
+	sendCmdtoServer('{"smartlife.iot.common.timesetting":{"get_time":null}}', "currentDateResponse")
 }
 
 def currentDateResponse(response) {
