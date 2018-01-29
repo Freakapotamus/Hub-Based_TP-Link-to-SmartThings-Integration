@@ -23,16 +23,16 @@ metadata {
 		name: "TP-Link LB120 Emeter Hub", namespace: "modify", author: "Dave Gutheinz") {
 		capability "switch"
 		capability "Switch Level"
-		capability "Color Temperature"
-		capability "refresh"
-		capability "polling"
 		capability "Sensor"
 		capability "Actuator"
+		capability "refresh"
+		capability "Color Temperature"
+		capability "polling"
+		attribute "bulbMode", "string"
 		command "setModeNormal"
 		command "setModeCircadian"
-		attribute "bulbMode", "string"
-		command "setCurrentDate"
 		capability "powerMeter"
+		command "setCurrentDate"
 		attribute "monthTotalE", "string"
 		attribute "monthAvgE", "string"
 		attribute "weekTotalE", "string"
@@ -40,31 +40,41 @@ metadata {
 		attribute "engrToday", "string"
 		attribute "dateUpdate", "string"
 	}
-	tiles(scale: 2) {
+	tiles(scale:2) {
 		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00a0dc", nextState:"waiting"
-				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff", nextState:"waiting"
-				attributeState "waiting", label:'${name}', action:"switch.on", icon:"st.switches.light.on", backgroundColor: "#15EE10", nextState:"on"
-				attributeState "offline", label:'Comms Error', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#e86d13", nextState:"waiting"
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.switches.light.on", backgroundColor:"#00a0dc",
+				nextState:"waiting"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#ffffff",
+				nextState:"waiting"
+				attributeState "waiting", label:'${name}', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#15EE10",
+				nextState:"waiting"
+				attributeState "commsError", label: 'Comms Error', action:"switch.on", icon:"st.switches.light.off", backgroundColor:"#e86d13",
+				nextState:"waiting"
 			}
-			tileAttribute ("device.level", key: "SLIDER_CONTROL") {attributeState "level", action:"switch level.setLevel"}
+			tileAttribute ("deviceError", key: "SECONDARY_CONTROL") {
+				attributeState "deviceError", label: '${currentValue}'
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", label: "Brightness: ${currentValue}", action:"switch level.setLevel"
+			}
 		}
-		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, range:"(2700..6500)") {
+		standardTile("refresh", "capability.refresh", width: 2, height: 2,  decoration: "flat") {
+			state ("default", label:"Refresh", action:"refresh.refresh", icon:"st.secondary.refresh")
+		}		 
+		controlTile("colorTempSliderControl", "device.colorTemperature", "slider", width: 4, height: 1, inactiveLabel: false,
+		range:"(2700..6500)") {
 			state "colorTemperature", action:"color temperature.setColorTemperature"
 		}
-		valueTile("colorTemp", "device.colorTemperature", decoration: "flat", height: 1, width: 2) {
-			state "colorTemp", label: 'Color Temp ${currentValue}K'
+		valueTile("colorTemp", "device.colorTemperature", inactiveLabel: false, decoration: "flat", height: 1, width: 2) {
+			state "colorTemp", label: '${currentValue}K'
 		}
-		standardTile("bulbMode", "bulbMode", width: 2, height: 1, decoration: "flat") {
-			state "normal", label:'Mode:   Normal', action:"setModeCircadian", backgroundColor:"#ffffff", nextState: "circadian"
-			state "circadian", label:'Mode:   Circadian', action:"setModeNormal", backgroundColor:"#00a0dc", nextState: "normal"
+		standardTile("bulbMode", "bulbMode", width: 2, height: 2, decoration: "flat") {
+			state "normal", label:'Circadian', action:"setModeCircadian", backgroundColor:"#ffffff", nextState: "circadian"
+			state "circadian", label:'Circadian', action:"setModeNormal", backgroundColor:"#00a0dc", nextState: "normal"
 		}
-		standardTile("refresh", "capability.refresh", width: 2, height: 1,  decoration: "flat") {
-			state ("default", label:"Refresh", action:"refresh.refresh", backgroundColor:"#ffffff")
-		}		 
-		standardTile("refreshStats", "Refresh Statistics", width: 2, height: 1,  decoration: "flat") {
-			state ("refreshStats", label:"Refresh Stats", action:"setCurrentDate", backgroundColor:"#ffffff")
+		standardTile("refreshStats", "Refresh Statistics", width: 2, height: 2,  decoration: "flat") {
+			state ("refreshStats", label:"Refresh Stats", action:"setCurrentDate", icon:"st.secondary.refresh")
 		}		 
 		valueTile("power", "device.power", decoration: "flat", height: 1, width: 2) {
 			state "power", label: 'Current Power \n\r ${currentValue} W'
@@ -84,7 +94,6 @@ metadata {
 		valueTile("weekAverage", "device.weekAvgE", decoration: "flat", height: 1, width: 2) {
 			state "weekAvgE", label: '7 Day Avg\n\r ${currentValue} KWH'
 		}
-		main("switch")
 		details(["switch", "colorTempSliderControl", "colorTemp", "power", "weekTotal", "monthTotal", "engrToday", "weekAverage", "monthAverage", "bulbMode", "refresh" ,"refreshStats"])
 	}
 	def rates = [:]
@@ -126,6 +135,12 @@ def updated() {
 	runIn(2, refresh)
     schedule("0 30 0 * * ?", setCurrentDate)
 	runIn(6, setCurrentDate)
+}
+
+void uninstalled() {
+	def alias = device.label
+	log.debug "Removing device ${alias} with DNI = ${device.deviceNetworkId}"
+	parent.removeChildDevice(alias, device.deviceNetworkId)
 }
 
 //	----- BASIC BULB COMMANDS ------------------------------------
@@ -212,9 +227,9 @@ def energyMeterResponse(response) {
 		sendEvent(name: "switch", value: "offline", descriptionText: "ERROR - OffLine - mod refreshResponse", isStateChange: true)
 	 } else {
 		def cmdResponse = parseJson(response.headers["cmd-response"])
-		   def realtime = cmdResponse["smartlife.iot.common.emeter"]["get_realtime"]
+		def realtime = cmdResponse["smartlife.iot.common.emeter"]["get_realtime"]
 		def powerConsumption = realtime.power_mw / 1000
-		sendEvent(name: "power", value: powerConsumption, isStateChange: true)
+		sendEvent(name: "power", value: powerConsumption)
 		log.info "$device.name $device.label: Updated CurrentPower to $powerConsumption"
 		getUseToday()
 	}
@@ -231,8 +246,8 @@ def useTodayResponse(response) {
 		log.error "$device.name $device.label: Communications Error"
 		sendEvent(name: "switch", value: "offline", descriptionText: "ERROR - OffLine - mod refreshResponse", isStateChange: true)
 	 } else {
-		def engrToday
 		def cmdResponse = parseJson(response.headers["cmd-response"])
+		def engrToday
 		def dayList = cmdResponse["smartlife.iot.common.emeter"]["get_daystat"].day_list
 		for (int i = 0; i < dayList.size(); i++) {
 			def engrData = dayList[i]
@@ -240,7 +255,7 @@ def useTodayResponse(response) {
 				engrToday = engrData.energy_wh/1000
 			}
 	   }
-		sendEvent(name: "engrToday", value: engrToday, isStateChange: true)
+		sendEvent(name: "engrToday", value: engrToday)
 		log.info "$device.name $device.label: Updated Today's Usage to $engrToday"
 	}
 }
@@ -277,6 +292,7 @@ def engrStatsResponse(response) {
 		sendEvent(name: "switch", value: "offline", descriptionText: "ERROR - OffLine - mod refreshResponse", isStateChange: true)
 	 } else {
 		getDateData()
+		def cmdResponse = parseJson(response.headers["cmd-response"])
 		def monTotEnergy = state.monTotEnergy
 		def wkTotEnergy = state.wkTotEnergy
 		def monTotDays = state.monTotDays
@@ -285,7 +301,6 @@ def engrStatsResponse(response) {
 		def prevMonthDays = calendar.getActualMaximum(GregorianCalendar.DAY_OF_MONTH)
 		def weekEnd = state.dayToday + prevMonthDays - 1
 		def weekStart = weekEnd - 6
-		def cmdResponse = parseJson(response.headers["cmd-response"])
 		def dayList = cmdResponse["smartlife.iot.common.emeter"]["get_daystat"].day_list
 		def dataMonth = dayList[0].month
 		def currentMonth = state.monthToday
@@ -311,7 +326,7 @@ def engrStatsResponse(response) {
 		state.monTotDays = monTotDays
 		state.monTotEnergy = monTotEnergy
 		state.wkTotEnergy = wkTotEnergy
-		if (state.dayToday == 31 || state.monthToday -1 == dataMonth) {
+		
 			log.info "$device.name $device.label: Updated 7 and 30 day energy consumption statistics"
 			def monAvgEnergy = Math.round(monTotEnergy/(monTotDays-1))/1000
 			def wkAvgEnergy = Math.round(wkTotEnergy/7)/1000
@@ -319,13 +334,13 @@ def engrStatsResponse(response) {
 			sendEvent(name: "monthAvgE", value: monAvgEnergy)
 			sendEvent(name: "weekTotalE", value: wkTotEnergy/1000)
 			sendEvent(name: "weekAvgE", value: wkAvgEnergy)
-		}
+		
 	}
 }
 
 //	----- Update date data ---------------------------------------
 def setCurrentDate() {
-	sendCmdtoServer('{"smartlife.iot.common.timesetting":{"get_time":null}}', "currentDateResponse")
+	sendCmdtoServer('{"smartlife.iot.common.timesetting":{"get_time":null}}', "deviceCommand", "currentDateResponse")
 }
 
 def currentDateResponse(response) {
@@ -340,8 +355,9 @@ def currentDateResponse(response) {
 		updateDataValue("yearToday", "$setDate.year")
 		sendEvent(name: "dateUpdate", value: "${setDate.year}/${setDate.month}/${setDate.mday}")
 		log.info "$device.name $device.label: Current Date Updated to ${setDate.year}/${setDate.month}/${setDate.mday}"
+		getWkMonStats()
 	}
-	getWkMonStats()
+	
 }
 
 def getDateData(){
