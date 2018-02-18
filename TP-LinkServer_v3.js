@@ -1,19 +1,16 @@
 #!/usr/bin/env node
 
 /*
-TP-LinkHub - Version 1.0
+TP-LinkHub - Version 2.0
 
-COMPATABILITY KEY:  HubVersion 1.0
+COMPATABILITY KEY:  HubVersion 2.0
 
 This java script uses node.js functionality to provide a hub between SmartThings and TP-Link devices.  It works with the following TP-Link integrations:
 a.	TP-Link Connect (including Discovery)
 b.	TP-Link Smart Things Integration
 c.	TP-Link Bridge (OPTIONAL)
 
-07/13/2017 - Update to eliminate the 1.5% comms error rate I am getting.  At same time, updating the Energy Monitor Device Handlers - optional for existing users.
-07/13/2017 - Update to add switch "oldNode" to allow working with pre-node.js V6 installations.  Major difference is the depreciated 'new Buffer' command whose replacement 'Buffer.alloc' does not exist in the earlier versions.
-07/13/2017 - Removed Bridge Support from this file.  Update Bridge installation accordingly.
-07/09/2017 - Updated for commonality with existing (non-connected) TP-Link and Bridge Device Handlers.
+01-31-2018	Release of Version 2 Hub
 */
 
 //##### Options for this program ###################################
@@ -82,6 +79,8 @@ function processDeviceCommand(request, response) {
 	var deviceIP = request.headers["tplink-iot-ip"]
 	var respMsg = "deviceCommand sending to IP: " + deviceIP + " Command: " + command
 	console.log(respMsg)
+	var action = request.headers["action"]
+	response.setHeader("action", action)
 	var socket = net.connect(9999, deviceIP)
 	socket.setKeepAlive(false)
 	socket.setTimeout(6000)  // 6 seconds timeout.  TEST WITHOUT
@@ -116,6 +115,8 @@ function processEmeterCommand(request, response) {
 	var deviceIP = request.headers["tplink-iot-ip"]
 	var respMsg = "EmeterCmd sending to IP:" + deviceIP + " command: " + command
 	console.log(respMsg)
+	var action = request.headers["action"]
+	response.setHeader("action", action)
 	var socket = net.connect(9999, deviceIP)
 	socket.setKeepAlive(false)
 	socket.setTimeout(4000)
