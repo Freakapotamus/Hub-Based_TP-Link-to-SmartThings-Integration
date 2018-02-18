@@ -15,7 +15,8 @@ Unless required by applicable law or agreed to in writing, software distributed 
 Supported models and functions:  This device supports the TP-Link LB120 with Emeter Functions
 
 Update History
-07-04-2017	- Initial release of this Emeter Version
+2017-04-07	- Initial release of this Emeter Version
+2018-02-18	- Final release to work with Hub Version 1.0
 */
 
 metadata {
